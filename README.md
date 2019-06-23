@@ -1,0 +1,1 @@
+This repository is meant to store the export of the CODES https://xgitlab.cels.anl.gov/codes/codes repository. This export is in JSON format and can be used to import things like issues and merge requests over using the GitHub API.
