@@ -5,10 +5,10 @@ import os
 author_id_map = {} # maps user ID numbers to full names
 secondary_author_id_map = {} #uses user names instead of full name
 
-issues_base_url = "https://xgitlab.cels.anl.gov/codes/codes/issues/"
+issues_base_url = "https://xgitlab.cels.anl.gov/codes/codes/issues/" #This is the base URL for old GitLab Issues
 
-GH_OWNER = "codes-org"
-GH_REPO = "codes"
+GH_OWNER = "REPLACE"
+GH_REPO = "REPLACE"
 
 print("Loading GitHub Personal Access Token")
 GH_TOKEN = os.environ["GH_TOKEN"] #make sure you export your own github api personal acess token to your command line
@@ -239,12 +239,17 @@ def main():
     json_in = load_issue_file("../export/issues-sample.json")
     issue_list = process_issues(json_in)
 
+    #Simple safety check to prevent someone from doing something without knowing what they were doing
+    response = input('This will, without further confirmation and irreversibly, import all loaded issues to the specified GitHub repo (%s/%s). To continue: type "proceed"\n'%(GH_OWNER,GH_REPO))
 
-    print("Sending to GitHub...")
+    if response == "proceed":
+        print("Sending to GitHub...")
 
-    for issue in issue_list:
-        # print(issue.to_json())
-        create_github_issue(issue)
+        for issue in issue_list:
+            # print(issue.to_json())
+            create_github_issue(issue)
+    else:
+        print('Response: "proceed" not found. Cancelling...')
     
 
 if __name__ == "__main__":
