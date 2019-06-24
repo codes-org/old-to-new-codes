@@ -1,9 +1,6 @@
-from collections import OrderedDict
 import json
 import requests
 import os
-
-all_issues = []
 
 author_id_map = {} # maps user ID numbers to full names
 secondary_author_id_map = {} #uses user names instead of full name
@@ -14,7 +11,7 @@ GH_OWNER = "codes-org"
 GH_REPO = "codes"
 
 print("Loading GitHub Personal Access Token")
-GH_TOKEN = os.environ["GH_TOKEN2"] #make sure you export your own github api personal acess token to your command line
+GH_TOKEN = os.environ["GH_TOKEN"] #make sure you export your own github api personal acess token to your command line
 print("Success\n")
 
 #Class for comments on issues - called Notes in GitLab land
@@ -148,7 +145,6 @@ def find_author_id_pairs(root):
 
 #create an issue object from a single issue from the json file
 def parse_issue(issue_raw):
-    
     #Issue Title
     issue_title = issue_raw['title']
     
