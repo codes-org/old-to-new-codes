@@ -1,6 +1,7 @@
 import json
 import requests
 import os
+from time import sleep
 
 author_id_map = {} # maps user ID numbers to full names
 secondary_author_id_map = {} #uses user names instead of full name
@@ -20,7 +21,8 @@ class Note:
         self.author_name = author_name
         self.timestamp = timestamp
 
-        formatted_body = body.replace("#","`#`")
+        formatted_body = body
+        # formatted_body = body.replace("#","`#`")
         formatted_body = formatted_body.replace("```text","```")
 
 
@@ -35,7 +37,7 @@ class Note:
 #Class to organize an issue and allow for easy json exporting to GitHub's REST API
 class Issue:
     def __init__(self, title=None, orig_author=None, orig_body=None, orig_issue_id=None, created_at=None, updated_at=None, closed_at=None, closed="open"):
-        self.title = title + " (Old #%s)"%orig_issue_id
+        self.title = title + " (Imported #%s)"%orig_issue_id
         self.orig_author = orig_author
         self.orig_issue_id = orig_issue_id
         self.created_at = created_at
@@ -44,8 +46,8 @@ class Issue:
         self.closed = closed
         self.orig_issue_url = issues_base_url + str(orig_issue_id)
 
-        orig_body = str(orig_body)
-        formatted_body = orig_body.replace("#","`#`")
+        formatted_body = str(orig_body)
+        # formatted_body = body.replace("#","`#`")
         formatted_body = formatted_body.replace("```text","```")
 
         formatted_body = "Original Issue Author: %s\n Original Issue ID: %s\n Original Issue URL: %s\n______\n"%(orig_author,orig_issue_id,self.orig_issue_url) + formatted_body
@@ -236,8 +238,11 @@ def main():
     find_author_id_pairs(full_json_in)
 
     #This 
-    json_in = load_issue_file("../export/issues-sample.json")
+    json_in = load_issue_file("../export/issues.json")
     issue_list = process_issues(json_in)
+
+
+    newlist = sorted(issue_list, key=lambda x: int(x.orig_issue_id), reverse=False)
 
     #Simple safety check to prevent someone from doing something without knowing what they were doing
     response = input('This will, without further confirmation and irreversibly, import all loaded issues to the specified GitHub repo (%s/%s). To continue: type "proceed"\n'%(GH_OWNER,GH_REPO))
@@ -245,12 +250,15 @@ def main():
     if response == "proceed":
         print("Sending to GitHub...")
 
-        for issue in issue_list:
+        for issue in newlist:
             # print(issue.to_json())
+            # print(issue.orig_issue_id)
             create_github_issue(issue)
+            sleep(5)
     else:
         print('Response: "proceed" not found. Cancelling...')
     
 
 if __name__ == "__main__":
     main()
+
