@@ -50,7 +50,7 @@ class Issue:
         # formatted_body = body.replace("#","`#`")
         formatted_body = formatted_body.replace("```text","```")
 
-        formatted_body = "Original Issue Author: %s\n Original Issue ID: %s\n Original Issue URL: %s\n______\n"%(orig_author,orig_issue_id,self.orig_issue_url) + formatted_body
+        formatted_body = "Original Issue Author: %s\nOriginal Issue ID: %s\nOriginal Issue URL: %s\n______\n"%(orig_author,orig_issue_id,self.orig_issue_url) + formatted_body
 
         self.body = str(formatted_body)
 
