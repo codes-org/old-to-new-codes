@@ -3,11 +3,7 @@ import requests
 import os
 from time import sleep
 
-
-author_id_map = {} # maps user ID numbers to full names
-secondary_author_id_map = {} #uses user names instead of full name
-
-mr_base_url = "https://xgitlab.cels.anl.gov/codes/codes/merge_requests/" #This is the base URL for old GitLab Issues
+mr_base_url = "https://xgitlab.cels.anl.gov/codes/codes/merge_requests/" #This is the base URL for old GitLab MR
 
 GH_OWNER = "codes-org"
 GH_REPO = "test-codes"
@@ -16,6 +12,8 @@ print("Loading GitHub Personal Access Token")
 GH_TOKEN = os.environ["GH_TOKEN"] #make sure you export your own github api personal acess token to your command line
 print("Success\n")
 
+author_id_map = {} # maps user ID numbers to full names
+secondary_author_id_map = {} #uses user names instead of full name
 
 #Class for comments on issues - called Notes in GitLab land
 class Note:
@@ -68,29 +66,6 @@ class Merge_Request:
         data['head'] = self.head_branch
         data['base'] = self.target_branch
         data['body'] = self.body
-        data['draft'] = True
-
-        # data['pull_request'] = {'title': self.title,
-        #                 'head': self.head_branch,
-        #                 'base': self.target_branch,
-        #                 'body': self.body,
-        #                 'created_at': self.created_at,
-        #                 'updated_at': self.updated_at,
-        #                 'status': self.state}
-
-        # if data['pull_request']['updated_at'] == "None":
-        #     del data['issue']['updated_at']
-
-        # comments = []
-
-        # for note in self.notes:
-        #     comment = {}
-        #     comment["created_at"] = note.timestamp
-        #     comment["body"] = "%s"%(note.body)
-
-        #     comments.append(comment)
-
-        # data['comments'] = comments
 
         return json.dumps(data)
 
