@@ -409,7 +409,7 @@ def main():
     find_author_id_pairs(full_json_in)
 
     #load issues file
-    issue_json_in = load_data_file("../export/issues-sample.json","issues")
+    issue_json_in = load_data_file("../export/issues.json","issues")
     issue_list = process_issues(issue_json_in)
 
     #load merge requests file
