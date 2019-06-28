@@ -38,12 +38,21 @@ class Note:
         
         return str_val
 
+    #This is to follow githubs issue comment REST api - actual issues don't use this, but the pull requests do.
+    def to_json(self):
+        data = {}
+
+        data['body'] = "(%s): %s\n"%(self.timestamp, self.body)
+        
+        return json.dumps(data)
+
 #Class to organize an issue and allow for easy json exporting to GitHub's REST API
 class Issue:
     def __init__(self, title=None, orig_author=None, orig_body=None, orig_issue_id=None, created_at=None, updated_at=None, closed_at=None, closed="open"):
         self.title = title + " (Imported #%s)"%orig_issue_id
         self.orig_author = orig_author
         self.orig_issue_id = orig_issue_id
+        self.new_issue_id = None
         self.created_at = created_at
         self.updated_at = updated_at
         self.closed_at = closed_at
@@ -63,6 +72,7 @@ class Issue:
     def add_note(self, note):
         self.notes.append(note)
 
+    # Issues utilize github's latest import api and so they don't follow what is actually listed on github's api - eyeroll.
     def to_json(self):
         data = {}
 
@@ -117,6 +127,7 @@ class Merge_Request:
         self.target_branch = target_branch
         self.orig_author = orig_author
         self.orig_mr_id = orig_mr_id
+        self.new_issue_id = None
         self.created_at = created_at
         self.updated_at = updated_at
         self.state = state
@@ -134,6 +145,7 @@ class Merge_Request:
     def add_note(self, note):
         self.notes.append(note)
 
+    # follows github's pull request REST api
     def to_json(self):
         data = {}
 
@@ -180,12 +192,12 @@ def load_data_file(filename, datatype):
     print("Success\n")
     return json_in
 
-# issue author names is not stored - but it is stored when they make notes or comments, so this searches for notes and comments to find ID/Author pairs
+# issue author names are not stored in the export - but it is stored when they make notes or comments, so this searches for notes and comments to find ID/Author pairs
+# as a backup it also looks at the project members area but this doesn't have full names, nor does it have a history of anyone who has ever been a member  - just who is currently one.
 def find_author_id_pairs(root):
     for key in root:
         if type(root[key]) == list:
             for item in root[key]:
-                # print(item)
                 if type(item) is dict:
                     if "notes" in item:
                         for note in item["notes"]:
@@ -355,17 +367,40 @@ def create_github_pull_request(mr_object):
 
     data = mr_object.to_json()
 
-    # print(data)
-
     response = requests.request("POST", url, data=data, headers=headers)
     if response.status_code == 201:
         print('Successfully created MR "%s"' % mr_object.title)
+        json_response = json.loads(response.content)
+        mr_object.new_issue_id = json_response['number'] #set the new issue ID so we can know where to post comments
     else:
         print('Could not create MR "%s"' % mr_object.title)
         print('Response:', response, response.content)
 
-def add_github_pull_request_comments(mr_object, num_issues):
-    new_pr_id = num_issues + mr_object.orig_mr_id
+
+
+
+def add_github_pull_request_comments(mr_object):
+    new_pr_id = mr_object.new_issue_id
+
+    url = 'https://api.github.com/repos/%s/%s/issues/%s/comments' % (GH_OWNER, GH_REPO, str(new_pr_id))
+
+    headers = {
+        "Authorization": "token %s" % GH_TOKEN,
+        "Accept": "application/vnd.github.sailor-v-preview+json"
+    }
+
+    sorted_notes = sorted(mr_object.notes, key=lambda x: str(x.timestamp), reverse=False)
+
+    for note in sorted_notes:
+        data = note.to_json()
+        response = requests.request("POST", url, data=data, headers=headers)
+
+        if response.status_code == 201:
+            print("Successfully added comment to %d"%(new_pr_id))
+        else:
+            print("Could not add comment to %d"%(new_pr_id))
+            print('Response:', response,response.content)
+
 
 def main():
 
@@ -373,12 +408,15 @@ def main():
     full_json_in = load_project_file("../export/project.json")
     find_author_id_pairs(full_json_in)
 
+    #load issues file
     issue_json_in = load_data_file("../export/issues-sample.json","issues")
     issue_list = process_issues(issue_json_in)
 
-    mr_json_in = load_data_file("../export/merges-sample.json","merge_requests")
+    #load merge requests file
+    mr_json_in = load_data_file("../export/merges.json","merge_requests")
     mr_list = process_merge_requests(mr_json_in)
 
+    #sort them by their original IDs
     sorted_issue_list = sorted(issue_list, key=lambda x: int(x.orig_issue_id), reverse=False)
     sorted_mr_list = sorted(mr_list, key=lambda x: int(x.orig_mr_id), reverse=False)
 
@@ -391,21 +429,20 @@ def main():
         print("Sending Issues...")
         for issue in sorted_issue_list:
             create_github_issue(issue)
-            sleep(5)
+            sleep(5) #allow github to process to avoid out of order issues and rate-abuse-monitoring
 
-        num_issues = len(sorted_issue_list)
-
-        new_pr_comment_map = {}
-
+        print("Sending Pull Requests...")
         for mr in sorted_mr_list:
             if mr.state is "open":
                 create_github_pull_request(mr)
-                sleep(5)
+                sleep(3)  #allow github to process to avoid out of order issues and rate-abuse-monitoring
         
+        print("Posting comments to valid pull requests...")
         for mr in sorted_mr_list:
             if mr.state is "open":
-                add_github_pull_request_comments(mr)
-                sleep(5)
+                if mr.new_issue_id is not None:
+                    add_github_pull_request_comments(mr)
+                    sleep(3)  #allow github to process to avoid out of order issues and rate-abuse-monitoring
 
 
     else:
