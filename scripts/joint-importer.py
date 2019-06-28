@@ -421,7 +421,7 @@ def main():
     sorted_mr_list = sorted(mr_list, key=lambda x: int(x.orig_mr_id), reverse=False)
 
     #Simple safety check to prevent someone from doing something without knowing what they were doing
-    response = input('This will, without further confirmation and irreversibly, import all loaded issues to the specified GitHub repo (%s/%s). To continue: type "proceed"\n'%(GH_OWNER,GH_REPO))
+    response = input('This will, without further confirmation and irreversibly, import all loaded issues, merge requests, and comments to the specified GitHub repo (%s/%s). To continue: type "proceed"\n'%(GH_OWNER,GH_REPO))
 
     if response == "proceed":
         print("Sending to GitHub...")
